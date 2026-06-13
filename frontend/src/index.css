@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f0f4ff;
+  --color-primary-100: #dbe4ff;
+  --color-primary-200: #bac8ff;
+  --color-primary-300: #91a7ff;
+  --color-primary-400: #748ffc;
+  --color-primary-500: #5c7cfa;
+  --color-primary-600: #4c6ef5;
+  --color-primary-700: #4263eb;
+  --color-primary-800: #3b5bdb;
+  --color-primary-900: #364fc7;
+  
+  --color-gold-50: #fff9db;
+  --color-gold-100: #fff3bf;
+  --color-gold-200: #ffec99;
+  --color-gold-300: #ffe066;
+  --color-gold-400: #ffd43b;
+  --color-gold-500: #fcc419;
+  --color-gold-600: #fab005;
+  --color-gold-700: #f59f00;
+  --color-gold-800: #e67700;
+  --color-gold-900: #d9480f;
+  
+  --color-dark-50: #c1c2c5;
+  --color-dark-100: #a6a7ab;
+  --color-dark-200: #909296;
+  --color-dark-300: #5c5f66;
+  --color-dark-400: #373a40;
+  --color-dark-500: #2c2e33;
+  --color-dark-600: #25262b;
+  --color-dark-700: #1a1b1e;
+  --color-dark-800: #141517;
+  --color-dark-900: #101113;
+
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(92, 124, 250, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(92, 124, 250, 0.5);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Glow effects */
+.glow-gold {
+  box-shadow: 0 0 20px rgba(252, 196, 25, 0.15), 
+              0 0 40px rgba(252, 196, 25, 0.05);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(92, 124, 250, 0.15),
+              0 0 40px rgba(92, 124, 250, 0.05);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fcc419, #f59f00, #e67700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, #748ffc, #5c7cfa, #4c6ef5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(252, 196, 25, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(252, 196, 25, 0.25); }
+}
+
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1.0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.typing-dot {
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0; }
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+}
+
+/* Light mode overrides */
+.light .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
