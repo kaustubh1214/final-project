@@ -2,14 +2,19 @@ import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { getApiErrorMessage } from '../utils/errors';
 const LegalScene3D = lazy(() => import('../components/LegalScene3D').then(m => ({ default: m.LegalScene3D })));
 import { HiScale, HiMail, HiLockClosed, HiUser, HiSun, HiMoon, HiEye, HiEyeOff } from 'react-icons/hi';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -19,31 +24,61 @@ export default function AuthPage() {
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
+    // Reset transient state when switching between Sign In / Sign Up.
+    const switchMode = (loginMode) => {
+        setIsLogin(loginMode);
+        setError('');
+        setSuccess('');
+        setConfirmPassword('');
+    };
+
+    // Returns an error string if invalid, or null if the form is good to submit.
+    const validate = () => {
+        const trimmedEmail = email.trim();
+        if (!EMAIL_RE.test(trimmedEmail)) {
+            return 'Please enter a valid email address.';
+        }
+        if (!isLogin) {
+            if (!fullName.trim()) {
+                return 'Please enter your full name.';
+            }
+            if (password.length < MIN_PASSWORD_LENGTH) {
+                return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+            }
+            if (password !== confirmPassword) {
+                return 'Passwords do not match.';
+            }
+        }
+        return null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccess('');
-        setLoading(true);
 
+        const validationError = validate();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        setLoading(true);
         try {
             if (isLogin) {
-                await login(email, password);
+                await login(email.trim(), password);
                 navigate('/dashboard');
             } else {
-                if (!fullName.trim()) {
-                    setError('Please enter your full name');
-                    setLoading(false);
-                    return;
-                }
-                await signup(fullName, email, password);
+                await signup(fullName.trim(), email.trim(), password);
                 // Switch to login tab and show success message
                 setSuccess('Account created successfully! Please sign in.');
                 setIsLogin(true);
                 setFullName('');
                 setPassword('');
+                setConfirmPassword('');
             }
         } catch (err) {
-            setError(err.response?.data?.detail || 'Something went wrong. Please try again.');
+            setError(getApiErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -100,7 +135,7 @@ export default function AuthPage() {
                     <div className={`flex rounded-xl p-1 mb-6 ${theme === 'dark' ? 'bg-dark-700/50' : 'bg-gray-100'
                         }`}>
                         <button
-                            onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }}
+                            onClick={() => switchMode(true)}
                             className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${isLogin
                                 ? theme === 'dark'
                                     ? 'bg-gradient-to-r from-gold-600 to-gold-500 text-dark-900 shadow-lg'
@@ -114,7 +149,7 @@ export default function AuthPage() {
                             Sign In
                         </button>
                         <button
-                            onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }}
+                            onClick={() => switchMode(false)}
                             className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${!isLogin
                                 ? theme === 'dark'
                                     ? 'bg-gradient-to-r from-gold-600 to-gold-500 text-dark-900 shadow-lg'
@@ -203,7 +238,7 @@ export default function AuthPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                     className={`w-full pl-10 pr-12 py-3 rounded-xl text-sm transition-all duration-300 outline-none ${theme === 'dark'
                                         ? 'bg-dark-700/50 border border-dark-400/30 text-white placeholder-dark-300 focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/20'
                                         : 'bg-white border border-gray-200 text-gray-800 placeholder-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-200'
@@ -219,7 +254,38 @@ export default function AuthPage() {
                                     {showPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
                                 </button>
                             </div>
+                            {!isLogin && (
+                                <p className={`text-[10px] mt-1.5 ${theme === 'dark' ? 'text-dark-300' : 'text-gray-400'}`}>
+                                    At least 8 characters.
+                                </p>
+                            )}
                         </div>
+
+                        {!isLogin && (
+                            <div className="animate-fade-in">
+                                <label className={`text-xs font-semibold uppercase tracking-wider mb-1.5 block ${theme === 'dark' ? 'text-dark-100' : 'text-gray-600'
+                                    }`}>
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <HiLockClosed className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-dark-300' : 'text-gray-400'
+                                        }`} />
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        required
+                                        minLength={8}
+                                        className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm transition-all duration-300 outline-none ${theme === 'dark'
+                                            ? 'bg-dark-700/50 border border-dark-400/30 text-white placeholder-dark-300 focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/20'
+                                            : 'bg-white border border-gray-200 text-gray-800 placeholder-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-200'
+                                            }`}
+                                        id="confirm-password-input"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         <button
                             type="submit"
@@ -247,7 +313,7 @@ export default function AuthPage() {
                         }`}>
                         {isLogin ? "Don't have an account? " : "Already have an account? "}
                         <button
-                            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+                            onClick={() => switchMode(!isLogin)}
                             className={`font-semibold transition-colors ${theme === 'dark' ? 'text-gold-400 hover:text-gold-300' : 'text-primary-600 hover:text-primary-700'
                                 }`}
                         >

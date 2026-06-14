@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import toast from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import ChatArea from '../components/ChatArea';
 import { BackgroundAnimation } from '../components/LegalScene3D';
 import api from '../utils/api';
+import { getApiErrorMessage } from '../utils/errors';
 import { HiMenuAlt2 } from 'react-icons/hi';
 
 export default function Dashboard() {
@@ -25,6 +27,10 @@ export default function Dashboard() {
             setChats(res.data);
         } catch (err) {
             console.error('Error fetching chats:', err);
+            // 401s are handled globally (redirect to login); only surface real failures.
+            if (err?.response?.status !== 401) {
+                toast.error(getApiErrorMessage(err, 'Failed to load your consultations.'));
+            }
         } finally {
             setLoadingChats(false);
         }
@@ -42,6 +48,7 @@ export default function Dashboard() {
             setMessages([]);
         } catch (err) {
             console.error('Error creating chat:', err);
+            toast.error(getApiErrorMessage(err, 'Could not start a new consultation.'));
         }
     };
 
@@ -52,10 +59,14 @@ export default function Dashboard() {
             setMessages(res.data.messages);
         } catch (err) {
             console.error('Error loading chat:', err);
+            toast.error(getApiErrorMessage(err, 'Failed to open this consultation.'));
         }
     };
 
     const deleteChat = async (chatId) => {
+        if (!window.confirm('Delete this consultation? This action cannot be undone.')) {
+            return;
+        }
         try {
             await api.delete(`/chats/${chatId}`);
             setChats(prev => prev.filter(c => c.id !== chatId));
@@ -63,8 +74,10 @@ export default function Dashboard() {
                 setActiveChat(null);
                 setMessages([]);
             }
+            toast.success('Consultation deleted.');
         } catch (err) {
             console.error('Error deleting chat:', err);
+            toast.error(getApiErrorMessage(err, 'Failed to delete consultation.'));
         }
     };
 
@@ -105,6 +118,7 @@ export default function Dashboard() {
                 return res.data;
             } catch (err) {
                 console.error('Error:', err);
+                toast.error(getApiErrorMessage(err, 'Failed to send your message.'));
                 throw err;
             }
         }
@@ -138,6 +152,7 @@ export default function Dashboard() {
             return res.data;
         } catch (err) {
             console.error('Error sending message:', err);
+            toast.error(getApiErrorMessage(err, 'Failed to send your message.'));
             // Remove optimistic user message on error
             setMessages(prev => prev.filter(m => m.id !== userMsg.id));
             throw err;

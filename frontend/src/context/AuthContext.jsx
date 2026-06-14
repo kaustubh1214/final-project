@@ -11,11 +11,36 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const savedToken = localStorage.getItem('nv_token');
         const savedUser = localStorage.getItem('nv_user');
-        if (savedToken && savedUser) {
-            setToken(savedToken);
-            setUser(JSON.parse(savedUser));
+
+        if (!savedToken || !savedUser) {
+            setLoading(false);
+            return;
         }
-        setLoading(false);
+
+        // Show the stored session optimistically...
+        setToken(savedToken);
+        try {
+            setUser(JSON.parse(savedUser));
+        } catch {
+            // Corrupted storage — clear it and force a fresh login.
+            localStorage.removeItem('nv_token');
+            localStorage.removeItem('nv_user');
+            setToken(null);
+            setUser(null);
+            setLoading(false);
+            return;
+        }
+
+        // ...then verify the token is still valid with the backend.
+        // A 401 is handled globally by the api interceptor (clears + redirects);
+        // transient/network errors are ignored so we don't log users out offline.
+        api.get('/auth/me')
+            .then((res) => {
+                setUser(res.data);
+                localStorage.setItem('nv_user', JSON.stringify(res.data));
+            })
+            .catch(() => { })
+            .finally(() => setLoading(false));
     }, []);
 
     const login = async (email, password) => {

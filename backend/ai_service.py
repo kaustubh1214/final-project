@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Model is configurable so it can be swapped without code changes.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 
 LEGAL_DOMAINS = {
     "criminal": ["murder", "theft", "robbery", "assault", "rape", "kidnapping", "fraud", "cheating", "forgery",
@@ -118,6 +120,34 @@ def check_sufficient_info(messages: List[Dict]) -> bool:
     return len(user_messages) >= 5
 
 
+# Current Gemini flash models (2.5 / flash-latest→3.5) are "thinking" models:
+# by default they spend part of the output-token budget on internal reasoning,
+# which can leave NO tokens for the actual answer (empty `parts`). We disable
+# thinking for predictable text output.
+THINKING_CONFIG = {"thinkingBudget": 0}
+
+
+def _extract_text_from_response(data: dict) -> str:
+    """Pull the answer text out of a Gemini generateContent response.
+
+    Skips any 'thought' parts and tolerates missing fields / safety blocks,
+    returning '' instead of raising so callers can fall back gracefully.
+    """
+    try:
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return ""
+        parts = (candidates[0].get("content") or {}).get("parts") or []
+        texts = [
+            p.get("text", "")
+            for p in parts
+            if p.get("text") and not p.get("thought")
+        ]
+        return "".join(texts).strip()
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return ""
+
+
 async def search_legal_precedents_via_gemini(query: str, legal_domain: str, case_details: str) -> List[Dict]:
     """
     Use Gemini API to find relevant Indian legal case precedents
@@ -158,7 +188,7 @@ CRITICAL RULES:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
                 headers={
                     "Content-Type": "application/json",
                     "X-goog-api-key": GEMINI_API_KEY
@@ -170,7 +200,8 @@ CRITICAL RULES:
                     "generationConfig": {
                         "temperature": 0.3,
                         "topP": 0.8,
-                        "maxOutputTokens": 4096
+                        "maxOutputTokens": 4096,
+                        "thinkingConfig": THINKING_CONFIG
                     }
                 }
             )
@@ -178,7 +209,7 @@ CRITICAL RULES:
             if response.status_code == 200:
                 data = response.json()
                 try:
-                    ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    ai_text = _extract_text_from_response(data)
                     # Extract JSON from the response
                     # Try to find JSON array in the response
                     json_match = re.search(r'\[[\s\S]*\]', ai_text)
@@ -366,7 +397,7 @@ async def generate_ai_response(
         try:
             async with httpx.AsyncClient(timeout=90.0) as client:
                 response = await client.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
                     headers={
                         "Content-Type": "application/json",
                         "X-goog-api-key": GEMINI_API_KEY
@@ -377,31 +408,37 @@ async def generate_ai_response(
                             "temperature": 0.7,
                             "topP": 0.9,
                             "topK": 40,
-                            "maxOutputTokens": 8192
+                            "maxOutputTokens": 8192,
+                            "thinkingConfig": THINKING_CONFIG
                         }
                     }
                 )
-                
+
                 if response.status_code == 200:
                     data = response.json()
-                    try:
-                        ai_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                        
-                        # Check if AI is asking about report readiness
-                        if "sufficient information" in ai_text.lower() and "report" in ai_text.lower():
-                            message_type = "follow_up"
-                        
-                        return ai_text, message_type, precedents
-                    except (KeyError, IndexError) as e:
-                        return f"I apologize, I encountered an issue processing my response. Could you please rephrase your question?", "error", None
-                elif response.status_code == 429:
+                    ai_text = _extract_text_from_response(data)
+
+                    if not ai_text:
+                        # Empty response (e.g. safety block or no content returned)
+                        return "I apologize, I encountered an issue processing my response. Could you please rephrase your question?", "error", None
+
+                    # Check if AI is asking about report readiness
+                    if "sufficient information" in ai_text.lower() and "report" in ai_text.lower():
+                        message_type = "follow_up"
+
+                    return ai_text, message_type, precedents
+                elif response.status_code == 429 or response.status_code >= 500:
+                    # 429 = rate limit (needs longer backoff); 5xx = transient
+                    # Gemini overload/unavailability (503/500/502/504) — retry both.
                     if attempt < max_retries - 1:
-                        delay = retry_delays[attempt]
-                        print(f"Rate limited (429). Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                        delay = retry_delays[attempt] if response.status_code == 429 else (attempt + 1) * 3
+                        print(f"Transient Gemini error {response.status_code}. Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
                         await asyncio.sleep(delay)
                         continue
-                    else:
+                    elif response.status_code == 429:
                         return "⚠️ The AI service is currently at capacity (rate limit reached). Please wait a moment and try again. If this persists, the API quota may need to be upgraded.", "error", None
+                    else:
+                        return "⚠️ The AI service is temporarily unavailable. Please try again in a moment.", "error", None
                 else:
                     error_detail = response.text
                     print(f"Gemini API error {response.status_code}: {error_detail}")
@@ -452,7 +489,7 @@ async def generate_chat_title(user_message: str) -> str:
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
                 headers={
                     "Content-Type": "application/json",
                     "X-goog-api-key": GEMINI_API_KEY
@@ -465,14 +502,15 @@ async def generate_chat_title(user_message: str) -> str:
                     }],
                     "generationConfig": {
                         "temperature": 0.3,
-                        "maxOutputTokens": 30
+                        "maxOutputTokens": 50,
+                        "thinkingConfig": THINKING_CONFIG
                     }
                 }
             )
 
             if response.status_code == 200:
                 data = response.json()
-                title = data["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"\'')
+                title = _extract_text_from_response(data).strip('"\'')
                 return title[:60] if title else user_message[:50]
     except Exception as e:
         print(f"Title generation error: {e}")

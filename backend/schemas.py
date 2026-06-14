@@ -1,18 +1,37 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
 
 # Auth schemas
 class UserCreate(BaseModel):
-    full_name: str
-    email: str
-    password: str
+    full_name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    # bcrypt only uses the first 72 bytes, so cap there.
+    password: str = Field(..., min_length=8, max_length=72)
+
+    @field_validator("full_name")
+    @classmethod
+    def _strip_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Full name cannot be empty")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def _normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
 
 
 class UserLogin(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(..., min_length=1)
+
+    @field_validator("email")
+    @classmethod
+    def _normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
 
 
 class UserResponse(BaseModel):
