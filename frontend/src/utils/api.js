@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// Derive the API path from Vite's base URL so the app works both at the root
+// origin ('/api') and under a sub-path like '/nyayavaad/' ('/nyayavaad/api').
+const BASE = import.meta.env.BASE_URL || '/';
+const API_BASE = BASE.replace(/\/+$/, '') + '/api';
+
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: API_BASE,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -23,7 +28,7 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('nv_token');
             localStorage.removeItem('nv_user');
-            window.location.href = '/login';
+            window.location.href = BASE + 'login';
         }
         return Promise.reject(error);
     }
