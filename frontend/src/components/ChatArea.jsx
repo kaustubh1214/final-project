@@ -64,7 +64,7 @@ export default function ChatArea({ activeChat, messages, onSendMessage, user }) 
 
                     <h2 className={`text-2xl font-bold font-[Playfair_Display] mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-800'
                         }`}>
-                        Welcome to <span className={theme === 'dark' ? 'text-gradient-gold' : 'text-gradient-primary'}>NaayVadh</span>
+                        Welcome to <span className={theme === 'dark' ? 'text-gradient-gold' : 'text-gradient-primary'}>NyayaVaad</span>
                     </h2>
 
                     <p className={`text-sm mb-8 leading-relaxed ${theme === 'dark' ? 'text-dark-200' : 'text-gray-500'
@@ -166,7 +166,7 @@ export default function ChatArea({ activeChat, messages, onSendMessage, user }) 
                         </div>
                         <p className={`text-center text-[10px] mt-2 ${theme === 'dark' ? 'text-dark-400' : 'text-gray-400'
                             }`}>
-                            NaayVadh provides AI-assisted legal information. Always consult a qualified lawyer for official legal advice.
+                            NyayaVaad provides AI-assisted legal information. Always consult a qualified lawyer for official legal advice.
                         </p>
                     </div>
                 </div>

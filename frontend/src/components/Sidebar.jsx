@@ -56,7 +56,7 @@ export default function Sidebar({
                             </div>
                             <div>
                                 <h1 className={`text-sm font-bold font-[Playfair_Display] ${theme === 'dark' ? 'text-white' : 'text-gray-800'
-                                    }`}>NaayVadh</h1>
+                                    }`}>NyayaVaad</h1>
                                 <p className={`text-[10px] uppercase tracking-widest ${theme === 'dark' ? 'text-gold-500/60' : 'text-primary-400'
                                     }`}>Legal AI</p>
                             </div>

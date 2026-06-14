@@ -12,7 +12,7 @@ function ProtectedRoute({ children }) {
       <div className="min-h-screen flex items-center justify-center bg-dark-900">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-2 border-gold-500 border-t-transparent animate-spin" />
-          <p className="text-dark-200 text-sm font-medium">Loading NaayVadh...</p>
+          <p className="text-dark-200 text-sm font-medium">Loading NyayaVaad...</p>
         </div>
       </div>
     );

@@ -118,7 +118,7 @@ export default function AuthPage() {
                     </div>
                     <h1 className={`text-3xl font-bold font-[Playfair_Display] mb-2 ${theme === 'dark' ? 'text-white' : 'text-dark-800'
                         }`}>
-                        NaayVadh
+                        NyayaVaad
                     </h1>
                     <p className={`text-sm tracking-widest uppercase ${theme === 'dark' ? 'text-gold-400/70' : 'text-primary-500'
                         }`}>
@@ -305,7 +305,7 @@ export default function AuthPage() {
                                     </svg>
                                     Processing...
                                 </span>
-                            ) : isLogin ? 'Sign In to NaayVadh' : 'Create Account'}
+                            ) : isLogin ? 'Sign In to NyayaVaad' : 'Create Account'}
                         </button>
                     </form>
 

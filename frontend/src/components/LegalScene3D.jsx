@@ -166,7 +166,7 @@ function Gavel({ position = [2.5, -0.5, 0.5], scale = 0.5 }) {
 
 function RotatingTextRing({ radius = 3.5, y = 0 }) {
     const groupRef = useRef();
-    const words = ['NaayVadh', '⚖️', 'Justice', '⚖️', 'न्याय', '⚖️', 'Law', '⚖️', 'अधिकार', '⚖️', 'Rights', '⚖️'];
+    const words = ['NyayaVaad', '⚖️', 'Justice', '⚖️', 'न्याय', '⚖️', 'Law', '⚖️', 'अधिकार', '⚖️', 'Rights', '⚖️'];
 
     useFrame((state) => {
         if (groupRef.current) {

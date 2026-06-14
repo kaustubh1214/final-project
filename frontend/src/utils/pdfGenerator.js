@@ -33,7 +33,7 @@ export function generatePDF(markdownContent, title = 'Legal Report') {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('NaayVadh', margin, 18);
+    doc.text('NyayaVaad', margin, 18);
 
     doc.setTextColor(...goldColor);
     doc.setFontSize(9);
@@ -72,7 +72,7 @@ export function generatePDF(markdownContent, title = 'Legal Report') {
             doc.rect(0, 0, pageWidth, 12, 'F');
             doc.setTextColor(...lightGray);
             doc.setFontSize(7);
-            doc.text('NaayVadh - AI Legal Assistant | Confidential', margin, 8);
+            doc.text('NyayaVaad - AI Legal Assistant | Confidential', margin, 8);
             doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, 8, { align: 'right' });
 
             // Line
@@ -216,9 +216,9 @@ export function generatePDF(markdownContent, title = 'Legal Report') {
     doc.setFontSize(7);
     doc.text('DISCLAIMER: This report is AI-generated for informational purposes only. It does not constitute legal advice.', margin, y + 4);
     doc.text('Always consult a qualified legal professional before taking any legal action.', margin, y + 8);
-    doc.text(`© ${new Date().getFullYear()} NaayVadh - AI Legal Assistant`, pageWidth - margin, y + 4, { align: 'right' });
+    doc.text(`© ${new Date().getFullYear()} NyayaVaad - AI Legal Assistant`, pageWidth - margin, y + 4, { align: 'right' });
 
     // Save
-    const fileName = `NaayVadh_Legal_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+    const fileName = `NyayaVaad_Legal_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
     doc.save(fileName);
 }
